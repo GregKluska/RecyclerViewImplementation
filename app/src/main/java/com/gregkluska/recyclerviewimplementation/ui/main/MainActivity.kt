@@ -5,16 +5,25 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.viewModels
 import androidx.lifecycle.Observer
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.bumptech.glide.RequestManager
 import com.gregkluska.recyclerviewimplementation.R
 import com.gregkluska.recyclerviewimplementation.api.ApiEmptyResponse
 import com.gregkluska.recyclerviewimplementation.api.ApiErrorResponse
 import com.gregkluska.recyclerviewimplementation.api.ApiSuccessResponse
+import com.gregkluska.recyclerviewimplementation.models.Photo
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.android.synthetic.main.activity_main.*
+import javax.inject.Inject
 
 private const val TAG = "MainActivity"
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity() {
+class MainActivity
+@Inject
+constructor(
+    private val requestManager: RequestManager
+) : AppCompatActivity(), MainRecyclerAdapter.Interaction {
 
     private val viewModel: MainViewModel by viewModels()
 
@@ -22,7 +31,21 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        initRecyclerView()
         subscribeObservers()
+    }
+
+    private fun initRecyclerView() {
+        recycler_view.apply{
+            layoutManager = LinearLayoutManager(this@MainActivity)
+            
+            val recyclerAdapter = MainRecyclerAdapter(
+                requestManager as RequestManager,
+                this@MainActivity
+            )
+            
+            adapter = recyclerAdapter
+        }
     }
 
     private fun subscribeObservers() {
@@ -45,5 +68,9 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+    }
+
+    override fun onItemSelected(position: Int, item: Photo) {
+        Log.d(TAG, "onItemSelected: Clicked item at position $position")
     }
 }
