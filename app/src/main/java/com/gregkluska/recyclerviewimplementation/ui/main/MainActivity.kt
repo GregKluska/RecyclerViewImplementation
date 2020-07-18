@@ -12,6 +12,7 @@ import com.gregkluska.recyclerviewimplementation.api.ApiEmptyResponse
 import com.gregkluska.recyclerviewimplementation.api.ApiErrorResponse
 import com.gregkluska.recyclerviewimplementation.api.ApiSuccessResponse
 import com.gregkluska.recyclerviewimplementation.models.Photo
+import com.gregkluska.recyclerviewimplementation.util.TopSpacingItemDecoration
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_main.*
 import javax.inject.Inject
@@ -22,6 +23,7 @@ private const val TAG = "MainActivity"
 class MainActivity : AppCompatActivity(), MainRecyclerAdapter.Interaction {
 
     private val viewModel: MainViewModel by viewModels()
+    private lateinit var recyclerAdapter: MainRecyclerAdapter
     @Inject
     lateinit var requestManager: RequestManager
 
@@ -36,9 +38,13 @@ class MainActivity : AppCompatActivity(), MainRecyclerAdapter.Interaction {
     private fun initRecyclerView() {
         recycler_view.apply{
             layoutManager = LinearLayoutManager(this@MainActivity)
-            
-            val recyclerAdapter = MainRecyclerAdapter(
-                requestManager as RequestManager,
+
+            val topSpacingDecorator = TopSpacingItemDecoration(30)
+            removeItemDecoration(topSpacingDecorator) // does nothing if not applied already
+            addItemDecoration(topSpacingDecorator)
+
+            recyclerAdapter = MainRecyclerAdapter(
+                requestManager,
                 this@MainActivity
             )
             
@@ -53,6 +59,10 @@ class MainActivity : AppCompatActivity(), MainRecyclerAdapter.Interaction {
 
                 is ApiSuccessResponse -> {
                     Log.d(TAG, "subscribeObservers: Success response : ${response.body}")
+
+                    recyclerAdapter.apply {
+                        submitList(response.body)
+                    }
                 }
 
                 is ApiErrorResponse -> {

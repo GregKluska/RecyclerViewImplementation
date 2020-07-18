@@ -8,8 +8,11 @@ import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import com.bumptech.glide.Glide
 import com.bumptech.glide.RequestManager
+import com.bumptech.glide.load.model.GlideUrl
+import com.bumptech.glide.load.model.LazyHeaders
 import com.gregkluska.recyclerviewimplementation.R
 import com.gregkluska.recyclerviewimplementation.models.Photo
+import com.gregkluska.recyclerviewimplementation.util.Constants.Companion.USER_AGENT
 import kotlinx.android.synthetic.main.layout_photo_item.view.*
 import javax.inject.Inject
 
@@ -74,8 +77,13 @@ class MainRecyclerAdapter(
                 interaction?.onItemSelected(adapterPosition, item)
             }
 
+             val glideUrl: GlideUrl = GlideUrl(item.url, LazyHeaders.Builder()
+                .addHeader("User-Agent", USER_AGENT)
+                .build()
+            )
+
             requestManager
-                .load(item.url)
+                .load(glideUrl)
                 .into(itemView.photo_image)
 
             itemView.photo_title.text = item.title
