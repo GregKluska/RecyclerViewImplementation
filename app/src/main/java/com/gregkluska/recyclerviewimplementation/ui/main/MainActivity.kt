@@ -19,13 +19,11 @@ import javax.inject.Inject
 private const val TAG = "MainActivity"
 
 @AndroidEntryPoint
-class MainActivity
-@Inject
-constructor(
-    private val requestManager: RequestManager
-) : AppCompatActivity(), MainRecyclerAdapter.Interaction {
+class MainActivity : AppCompatActivity(), MainRecyclerAdapter.Interaction {
 
     private val viewModel: MainViewModel by viewModels()
+    @Inject
+    lateinit var requestManager: RequestManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
