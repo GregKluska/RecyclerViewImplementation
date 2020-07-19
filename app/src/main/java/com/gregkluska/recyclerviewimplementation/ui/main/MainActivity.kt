@@ -11,7 +11,10 @@ import com.gregkluska.recyclerviewimplementation.R
 import com.gregkluska.recyclerviewimplementation.api.ApiEmptyResponse
 import com.gregkluska.recyclerviewimplementation.api.ApiErrorResponse
 import com.gregkluska.recyclerviewimplementation.api.ApiSuccessResponse
+import com.gregkluska.recyclerviewimplementation.models.Album
 import com.gregkluska.recyclerviewimplementation.models.Photo
+import com.gregkluska.recyclerviewimplementation.models.User
+import com.gregkluska.recyclerviewimplementation.util.MergedData
 import com.gregkluska.recyclerviewimplementation.util.TopSpacingItemDecoration
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_main.*
@@ -54,31 +57,81 @@ class MainActivity : AppCompatActivity(), MainRecyclerAdapter.Interaction {
 
     private fun subscribeObservers() {
 
-        viewModel.testPhotoListRequest().observe(this, Observer { response ->
-            when(response) {
+        viewModel.getMergedData().observe(this, Observer { mergedData ->
 
-                is ApiSuccessResponse -> {
-                    Log.d(TAG, "subscribeObservers: Success response : ${response.body}")
+            when(mergedData) {
+                is MergedData.UserList -> {
+                    Log.d(TAG, "subscribeObservers: ${mergedData.userList}")
 
-                    recyclerAdapter.apply {
-                        submitList(response.body)
+                    when(mergedData.userList) {
+                        is ApiSuccessResponse -> {
+                            recyclerAdapter.apply {
+                                submitUserList(mergedData.userList.body)
+                            }
+                        }
+
+                        is ApiErrorResponse -> {
+                            Log.d(TAG, "subscribeObservers: Error response : ${mergedData.userList.errorMessage}")
+                        }
+
+                        is ApiEmptyResponse -> {
+                            Log.d(TAG, "subscribeObservers: Empty response")
+                        }
+                    }
+
+
+                }
+                is MergedData.AlbumList -> {
+                    Log.d(TAG, "subscribeObservers: ${mergedData.albumList}")
+
+                    when(mergedData.albumList) {
+                        is ApiSuccessResponse -> {
+                            recyclerAdapter.apply {
+                                submitAlbumList(mergedData.albumList.body)
+                            }
+                        }
+
+                        is ApiErrorResponse -> {
+                            Log.d(TAG, "subscribeObservers: Error response : ${mergedData.albumList.errorMessage}")
+                        }
+
+                        is ApiEmptyResponse -> {
+                            Log.d(TAG, "subscribeObservers: Empty response")
+                        }
+                    }
+                }
+                is MergedData.PhotoList -> {
+                    Log.d(TAG, "subscribeObservers: ${mergedData.photoList}")
+
+                    when(mergedData.photoList) {
+                        is ApiSuccessResponse -> {
+                            recyclerAdapter.apply {
+                                submitPhotoList(mergedData.photoList.body)
+                            }
+                        }
+
+                        is ApiErrorResponse -> {
+                            Log.d(TAG, "subscribeObservers: Error response : ${mergedData.photoList.errorMessage}")
+                        }
+
+                        is ApiEmptyResponse -> {
+                            Log.d(TAG, "subscribeObservers: Empty response")
+                        }
                     }
                 }
 
-                is ApiErrorResponse -> {
-                    Log.d(TAG, "subscribeObservers: Error response : ${response.errorMessage}")
-                }
-
-                is ApiEmptyResponse -> {
-                    Log.d(TAG, "subscribeObservers: Empty response")
-                }
-
             }
+
         })
+
 
     }
 
-    override fun onItemSelected(position: Int, item: Photo) {
-        Log.d(TAG, "onItemSelected: Clicked item at position $position")
+    override fun onAlbumSelected(position: Int, album: Album) {
+        viewModel.postAlbumsId(album.id)
+    }
+
+    override fun onUserSelected(position: Int, user: User) {
+        viewModel.postUserId(user.id)
     }
 }

@@ -11,9 +11,13 @@ import com.bumptech.glide.RequestManager
 import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.load.model.LazyHeaders
 import com.gregkluska.recyclerviewimplementation.R
+import com.gregkluska.recyclerviewimplementation.models.Album
 import com.gregkluska.recyclerviewimplementation.models.Photo
+import com.gregkluska.recyclerviewimplementation.models.User
 import com.gregkluska.recyclerviewimplementation.util.Constants.Companion.USER_AGENT
+import kotlinx.android.synthetic.main.layout_album_item.view.*
 import kotlinx.android.synthetic.main.layout_photo_item.view.*
+import kotlinx.android.synthetic.main.layout_user_item.view.*
 import javax.inject.Inject
 
 class MainRecyclerAdapter(
@@ -22,8 +26,33 @@ class MainRecyclerAdapter(
     ) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    val DIFF_CALLBACK = object : DiffUtil.ItemCallback<Photo>() {
+    companion object {
+        const val USER_TYPE = 1
+        const val ALBUM_TYPE = 2
+        const val PHOTO_TYPE = 3
+    }
 
+    val USER_DIFF_CALLBACK = object : DiffUtil.ItemCallback<User>() {
+        override fun areItemsTheSame(oldItem: User, newItem: User): Boolean {
+            return oldItem.id == newItem.id
+        }
+
+        override fun areContentsTheSame(oldItem: User, newItem: User): Boolean {
+            return oldItem == newItem
+        }
+    }
+
+    val ALBUM_DIFF_CALLBACK = object : DiffUtil.ItemCallback<Album>() {
+        override fun areItemsTheSame(oldItem: Album, newItem: Album): Boolean {
+            return oldItem.id == newItem.id
+        }
+
+        override fun areContentsTheSame(oldItem: Album, newItem: Album): Boolean {
+            return oldItem == newItem
+        }
+    }
+
+    val PHOTO_DIFF_CALLBACK = object : DiffUtil.ItemCallback<Photo>() {
         override fun areItemsTheSame(oldItem: Photo, newItem: Photo): Boolean {
             return oldItem.id == newItem.id
         }
@@ -31,51 +60,143 @@ class MainRecyclerAdapter(
         override fun areContentsTheSame(oldItem: Photo, newItem: Photo): Boolean {
             return oldItem == newItem
         }
-
     }
-    private val differ = AsyncListDiffer(this, DIFF_CALLBACK)
+
+    private val userDiffer = AsyncListDiffer(this, USER_DIFF_CALLBACK)
+    private val albumDiffer = AsyncListDiffer(this, ALBUM_DIFF_CALLBACK)
+    private val photoDiffer = AsyncListDiffer(this, PHOTO_DIFF_CALLBACK)
 
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
 
-        return PhotoViewHolder(
-            LayoutInflater.from(parent.context).inflate(
-                R.layout.layout_photo_item,
-                parent,
-                false
-            ),
-            requestManager,
-            interaction
-        )
-    }
+        val view : View
 
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        when (holder) {
-            is PhotoViewHolder -> {
-                holder.bind(differ.currentList.get(position))
+        when (viewType) {
+            USER_TYPE -> {
+                view = LayoutInflater.from(parent.context).inflate(
+                    R.layout.layout_user_item,
+                    parent,
+                    false
+                )
+                return UserViewHolder(view, interaction)
+            }
+            ALBUM_TYPE -> {
+                view = LayoutInflater.from(parent.context).inflate(
+                    R.layout.layout_album_item,
+                    parent,
+                    false
+                )
+                return AlbumViewHolder(view, interaction)
+            }
+
+            PHOTO_TYPE -> {
+                view = LayoutInflater.from(parent.context).inflate(
+                    R.layout.layout_photo_item,
+                    parent,
+                    false
+                )
+                return PhotoViewHolder(view, requestManager)
+            }
+
+            else -> {
+                view = LayoutInflater.from(parent.context).inflate(
+                    R.layout.layout_user_item,
+                    parent,
+                    false
+                )
+                return UserViewHolder(view, interaction)
             }
         }
     }
 
-    override fun getItemCount(): Int {
-        return differ.currentList.size
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        when (holder) {
+            is UserViewHolder -> {
+                holder.bind(userDiffer.currentList[position])
+            }
+
+            is AlbumViewHolder -> {
+                holder.bind(albumDiffer.currentList[position])
+            }
+
+            is PhotoViewHolder -> {
+                holder.bind(photoDiffer.currentList[position])
+            }
+        }
     }
 
-    fun submitList(list: List<Photo>) {
-        differ.submitList(list)
+    override fun getItemViewType(position: Int): Int {
+        if(photoDiffer.currentList.size > 0) {
+            return PHOTO_TYPE
+        } else if(albumDiffer.currentList.size > 0) {
+            return ALBUM_TYPE
+        }
+        return USER_TYPE
     }
+
+    override fun getItemCount(): Int {
+        return userDiffer.currentList.size + albumDiffer.currentList.size + photoDiffer.currentList.size
+    }
+
+    fun submitUserList(list: List<User>) {
+        albumDiffer.submitList(null)
+        photoDiffer.submitList(null)
+        userDiffer.submitList(list)
+    }
+
+    fun submitAlbumList(list: List<Album>) {
+        userDiffer.submitList(null)
+        photoDiffer.submitList(null)
+        albumDiffer.submitList(list)
+    }
+
+    fun submitPhotoList(list: List<Photo>) {
+        userDiffer.submitList(null)
+        albumDiffer.submitList(null)
+        photoDiffer.submitList(list)
+    }
+
+    class UserViewHolder
+    constructor(
+        itemView: View,
+        private val interaction: Interaction?
+    ) : RecyclerView.ViewHolder(itemView) {
+
+        fun bind(item: User) = with(itemView) {
+            itemView.setOnClickListener {
+                interaction?.onUserSelected(adapterPosition, item)
+            }
+
+            itemView.username.text = item.username
+            itemView.name.text = item.name
+        }
+
+    }
+
+    class AlbumViewHolder
+    constructor(
+        itemView: View,
+        private val interaction: Interaction?
+    ) : RecyclerView.ViewHolder(itemView) {
+
+        fun bind(item: Album) = with(itemView) {
+            itemView.setOnClickListener{
+                interaction?.onAlbumSelected(adapterPosition, item)
+            }
+
+            itemView.album_title.text = item.title
+        }
+
+    }
+
 
     class PhotoViewHolder
     constructor(
         itemView: View,
-        val requestManager: RequestManager,
-        private val interaction: Interaction?
+        private val requestManager: RequestManager
     ) : RecyclerView.ViewHolder(itemView) {
 
         fun bind(item: Photo) = with(itemView) {
-            itemView.setOnClickListener {
-                interaction?.onItemSelected(adapterPosition, item)
-            }
 
              val glideUrl: GlideUrl = GlideUrl(item.url, LazyHeaders.Builder()
                 .addHeader("User-Agent", USER_AGENT)
@@ -92,6 +213,7 @@ class MainRecyclerAdapter(
     }
 
     interface Interaction {
-        fun onItemSelected(position: Int, item: Photo)
+        fun onAlbumSelected(position: Int, album: Album)
+        fun onUserSelected(position: Int, user: User)
     }
 }
