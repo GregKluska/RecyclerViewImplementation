@@ -124,7 +124,22 @@ class MainActivity : AppCompatActivity(), MainRecyclerAdapter.Interaction {
 
         })
 
+    }
 
+    override fun onBackPressed() {
+        when(viewModel.getMergedData().value) {
+            is MergedData.AlbumList -> {
+                viewModel.repostUsers()
+            }
+
+            is MergedData.PhotoList -> {
+                viewModel.repostAlbums()
+            }
+
+            is MergedData.UserList -> {
+                super.onBackPressed()
+            }
+        }
     }
 
     override fun onAlbumSelected(position: Int, album: Album) {

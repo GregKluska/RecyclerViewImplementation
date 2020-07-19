@@ -58,5 +58,17 @@ constructor(
     fun postUserId(userId: Int) = mUserId.postValue(userId)
     fun postAlbumsId(albumId: Int) = mAlbumId.postValue(albumId)
 
+    fun repostUsers() {
+        mUserList.value?.let{
+            mMergedData.value = MergedData.UserList(it)
+        }
+    }
+
+    fun repostAlbums() {
+        mAlbumList.value?.let{
+            mMergedData.value = MergedData.AlbumList(it)
+        }?: repostUsers()
+    }
+
     fun getMergedData() = mMergedData
 }
